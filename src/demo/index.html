@@ -329,7 +329,6 @@
       throw new Error('No face detected');
     }
 
-    // Liveness challenge to prevent spoofing
     async function livenessChallenge(actions = ['smile', 'turn']) {
       const shuffled = actions.sort(() => 0.5 - Math.random());
       const seq = shuffled.slice(0, 2);
