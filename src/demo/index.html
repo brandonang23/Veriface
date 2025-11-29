@@ -200,8 +200,8 @@
       </div>
     </main>
   </div>
-
-  <script defer src="face-api-min.js"></script>
+  
+  <script defer src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
   
   <script>
     const verifaceCamera = document.getElementById('veriface-camera');
@@ -212,7 +212,7 @@
     const cancelBtn = document.getElementById('veriface-cancel');
     const demoSuccessBtn = document.getElementById('demo-simulate-success');
     const demoFailureBtn = document.getElementById('demo-simulate-failure');
-    const MODEL_URL = '../weights';
+    const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js/weights';
     let verifaceStream = null;
     let faceModelsLoaded = false;
 
