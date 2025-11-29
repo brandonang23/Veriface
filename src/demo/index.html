@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veriface - Facial Recognition Authentication</title>
+  <style>
+    :root {
+      --bg: #0a0f17;
+      --card: #101823;
+      --muted: #a8b8c8;
+      --accent: #0b66c3;
+      --glass: rgba(255, 255, 255, 0.04);
+      --text: #f1f4f8;
+      --muted-2: rgba(168, 184, 200, 0.6);
+      --soft-shadow: 14px 14px 32px rgba(5, 10, 20, 0.8), -8px -8px 20px rgba(255, 255, 255, 0.05);
+      --inset-shadow: inset 6px 6px 18px rgba(3, 6, 12, 0.7), inset -4px -4px 10px rgba(255, 255, 255, 0.03);
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+      --transition: 240ms cubic-bezier(.25, .9, .25, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", Times, serif;
+      color: var(--text);
+      background: radial-gradient(1200px 500px at 10% 10%, rgba(87, 169, 255, 0.06), transparent 40%), linear-gradient(180deg, #041424 0%, #071427 100%);
+      padding: 28px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .veriface-modal {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005));
+      padding: 30px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--soft-shadow);
+      border: var(--glass-border);
+      backdrop-filter: blur(6px);
+    }
+
+    .veriface-modal h3 {
+      text-align: center;
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    .veriface-camera-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    #veriface-camera {
+      width: 100%;
+      max-width: 360px;
+      height: 260px;
+      border-radius: var(--radius-md);
+      background: #000;
+      box-shadow: var(--inset-shadow);
+    }
+
+    #veriface-snapshot {
+      display: none;
+    }
+
+    .veriface-status {
+      text-align: center;
+      color: var(--muted);
+      margin: 15px 0;
+      min-height: 24px;
+    }
+
+    .veriface-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    button {
+      background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 70%, black 20%));
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 6px 10px 22px rgba(18, 55, 90, 0.45), inset -2px -2px 6px rgba(255, 255, 255, 0.03);
+      transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+    }
+
+    button:hover {
+      transform: translateY(-4px);
+      box-shadow: 10px 18px 34px rgba(18, 55, 90, 0.55);
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .veriface-info {
+      background: rgba(87, 169, 255, 0.08);
+      padding: 15px;
+      border-radius: var(--radius-md);
+      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .veriface-info h4 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+
+    .demo-controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px;
+      }
+      
+      .veriface-modal {
+        padding: 20px;
+      }
+      
+      #veriface-camera {
+        height: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Veriface</h1>
+      <div class="subtitle">Facial Recognition Authentication</div>
+    </header>
+    
+    <main>
+      <div class="veriface-modal">
+        <h3>Face Authentication Required</h3>
+        
+        <div class="veriface-camera-container">
+          <video id="veriface-camera" width="360" height="260" autoplay muted></video>
+          <canvas id="veriface-snapshot"></canvas>
+        </div>
+        
+        <div id="veriface-status" class="veriface-status">Initializing camera...</div>
+        
+        <div class="veriface-actions">
+          <button id="veriface-register">Register Face</button>
+          <button id="veriface-verify">Verify Face</button>
+          <button id="veriface-cancel" class="secondary">Cancel</button>
+        </div>
+        
+        <div class="demo-controls">
+          <button id="demo-simulate-success">Simulate Success</button>
+          <button id="demo-simulate-failure" class="secondary">Simulate Failure</button>
+        </div>
+        
+        <div class="veriface-info">
+          <h4>How Veriface Works</h4>
+          <p>Veriface uses advanced facial recognition technology to create a secure biometric profile. During registration, it captures multiple facial descriptors and performs liveness detection to ensure authenticity. For verification, it compares live facial data with your stored profile.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script defer src="face-api-min.js"></script>
+  
+  <script>
+    const verifaceCamera = document.getElementById('veriface-camera');
+    const verifaceCanvas = document.getElementById('veriface-snapshot');
+    const verifaceStatus = document.getElementById('veriface-status');
+    const registerBtn = document.getElementById('veriface-register');
+    const verifyBtn = document.getElementById('veriface-verify');
+    const cancelBtn = document.getElementById('veriface-cancel');
+    const demoSuccessBtn = document.getElementById('demo-simulate-success');
+    const demoFailureBtn = document.getElementById('demo-simulate-failure');
+    const MODEL_URL = './weights';
+    let verifaceStream = null;
+    let faceModelsLoaded = false;
+
+    const storedProfiles = JSON.parse(localStorage.getItem('veriface_profiles') || '{}');
+
+    async function loadFaceModels() {
+      if (faceModelsLoaded) return;
+      
+      verifaceStatus.innerText = 'Loading face models…';
+      try {
+        await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        faceModelsLoaded = true;
+        verifaceStatus.innerText = 'Models loaded. Ready for authentication.';
+      } catch (error) {
+        verifaceStatus.innerText = 'Error loading face models: ' + error.message;
+      }
+    }
+
+    async function startVerifaceCamera() {
+      verifaceStatus.innerText = 'Starting camera…';
+      try {
+        verifaceStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          } 
+        });
+        verifaceCamera.srcObject = verifaceStream;
+        await verifaceCamera.play();
+        verifaceStatus.innerText = 'Camera ready. Click Register or Verify.';
+        return true;
+      } catch (error) {
+        verifaceStatus.innerText = 'Camera error: ' + error.message;
+        return false;
+      }
+    }
+
+    function stopVerifaceCamera() {
+      try {
+        if (verifaceStream) {
+          verifaceStream.getTracks().forEach(track => track.stop());
+          verifaceStream = null;
+        }
+      } catch (error) {
+        console.error('Error stopping camera:', error);
+      }
+      
+      try { 
+        verifaceCamera.pause(); 
+        verifaceCamera.srcObject = null; 
+      } catch (error) {
+        console.error('Error resetting camera:', error);
+      }
+    }
+
+    function captureSnapshot() {
+      verifaceCanvas.width = verifaceCamera.videoWidth || 360;
+      verifaceCanvas.height = verifaceCamera.videoHeight || 260;
+      const ctx = verifaceCanvas.getContext('2d');
+      ctx.drawImage(verifaceCamera, 0, 0, verifaceCanvas.width, verifaceCanvas.height);
+      return verifaceCanvas.toDataURL('image/png');
+    }
+
+    function cosineSimilarity(a, b) {
+      let dot = 0, na = 0, nb = 0;
+      for (let i = 0; i < a.length; i++) { 
+        dot += a[i] * b[i]; 
+        na += a[i] * a[i]; 
+        nb += b[i] * b[i]; 
+      }
+      return dot / (Math.sqrt(na) * Math.sqrt(nb));
+    }
+
+    function avgDescriptor(descriptors) {
+      if (!descriptors.length) return null;
+      const len = descriptors[0].length;
+      const out = new Array(len).fill(0);
+      descriptors.forEach(d => { 
+        for (let i = 0; i < len; i++) out[i] += d[i]; 
+      });
+      for (let i = 0; i < len; i++) out[i] /= descriptors.length;
+      return out;
+    }
+
+    function mouthAspectRatio(mouth) {
+      const A = Math.hypot(mouth[13].x - mouth[19].x, mouth[13].y - mouth[19].y);
+      const B = Math.hypot(mouth[14].x - mouth[18].x, mouth[14].y - mouth[18].y);
+      const C = Math.hypot(mouth[12].x - mouth[16].x, mouth[12].y - mouth[16].y);
+      return (A + B) / (2.0 * C);
+    }
+
+    function estimateYaw(detection) {
+      const box = detection.detection.box;
+      const nose = detection.landmarks.getNose();
+      const noseX = nose[3].x;
+      const centerX = box.x + box.width / 2;
+      return (noseX - centerX) / box.width;
+    }
+
+    async function captureFaceDescriptor(retries = 3) {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        const det = await faceapi.detectSingleFace(
+          verifaceCamera, 
+          new faceapi.SsdMobilenetv1Options()
+        ).withFaceLandmarks().withFaceDescriptor();
+        
+        if (det && det.descriptor) return Array.from(det.descriptor);
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      throw new Error('No face detected');
+    }
+
+    // Liveness challenge to prevent spoofing
+    async function livenessChallenge(actions = ['smile', 'turn']) {
+      const shuffled = actions.sort(() => 0.5 - Math.random());
+      const seq = shuffled.slice(0, 2);
+      verifaceStatus.innerText = 'Liveness challenge: ' + seq.join(' then ') + ' (follow prompts)';
+      const turnThreshold = 0.15;
+
+      for (const action of seq) {
+        verifaceStatus.innerText = `Please ${action} now`;
+        const start = Date.now();
+        let success = false;
+        
+        while (Date.now() - start < 6000) {
+          const d = await faceapi.detectSingleFace(
+            verifaceCamera, 
+            new faceapi.SsdMobilenetv1Options()
+          ).withFaceLandmarks();
+          
+          if (!d) { 
+            await new Promise(resolve => setTimeout(resolve, 120)); 
+            continue; 
+          }
+          
+          if (action === 'smile') {
+            try {
+              const expDet = await faceapi.detectSingleFace(
+                verifaceCamera, 
+                new faceapi.SsdMobilenetv1Options()
+              ).withFaceExpressions();
+              
+              if (expDet && expDet.expressions && 
+                  typeof expDet.expressions.happy === 'number' && 
+                  expDet.expressions.happy >= 0.8) { 
+                success = true; 
+                break; 
+              }
+            } catch (error) {
+              const mouth = d.landmarks.getMouth();
+              const mar = mouthAspectRatio(mouth);
+              if (mar > 0.45) { 
+                success = true; 
+                break; 
+              }
+            }
+          } else if (action === 'turn') {
+            const yaw = estimateYaw(d);
+            if (Math.abs(yaw) > turnThreshold) { 
+              success = true; 
+              break; 
+            }
+          }
+          await new Promise(resolve => setTimeout(resolve, 120));
+        }
+        
+        if (!success) { 
+          verifaceStatus.innerText = `❌ Liveness action '${action}' not detected`; 
+          return false; 
+        }
+        
+        verifaceStatus.innerText = `✓ ${action} detected`;
+        await new Promise(resolve => setTimeout(resolve, 700));
+      }
+      return true;
+    }
+
+    function generateRandomPassword() {
+      const arr = new Uint8Array(18);
+      crypto.getRandomValues(arr);
+      return btoa(String.fromCharCode.apply(null, arr));
+    }
+
+    async function registerFace() {
+      if (!faceModelsLoaded) {
+        verifaceStatus.innerText = 'Face models not loaded yet. Please wait.';
+        return;
+      }
+
+      const email = prompt('Enter your email for registration:');
+      if (!email) return;
+
+      verifaceStatus.innerText = 'Starting registration process...';
+      
+      try {
+        const camOk = await startVerifaceCamera();
+        if (!camOk) return;
+
+        const live = await livenessChallenge();
+        if (!live) { 
+          verifaceStatus.innerText = '❌ Liveness check failed'; 
+          stopVerifaceCamera(); 
+          return; 
+        }
+
+        verifaceStatus.innerText = 'Collecting face descriptors…';
+        const captures = [];
+        
+        for (let i = 0; i < 4; i++) {
+          try {
+            const d = await captureFaceDescriptor(4);
+            captures.push(d);
+          } catch (error) {
+            console.error('Error capturing face descriptor:', error);
+          }
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        if (!captures.length) { 
+          verifaceStatus.innerText = '❌ Could not capture face descriptors'; 
+          stopVerifaceCamera(); 
+          return; 
+        }
+        
+        const descriptor = avgDescriptor(captures);
+        const snapshot = captureSnapshot();
+        const generatedPassword = generateRandomPassword();
+
+        storedProfiles[email] = {
+          descriptor: descriptor,
+          id_image: snapshot,
+          auth_password: generatedPassword,
+          created_at: new Date().toISOString()
+        };
+        
+        localStorage.setItem('veriface_profiles', JSON.stringify(storedProfiles));
+        
+        verifaceStatus.innerText = `✅ ${email} registered successfully!`;
+        stopVerifaceCamera();
+        
+        setTimeout(() => {
+          verifaceStatus.innerText = 'Ready for next action.';
+        }, 2000);
+        
+      } catch (error) {
+        verifaceStatus.innerText = '❌ Registration failed: ' + error.message;
+        stopVerifaceCamera();
+      }
+    }
+
+    async function verifyFace() {
+      if (!faceModelsLoaded) {
+        verifaceStatus.innerText = 'Face models not loaded yet. Please wait.';
+        return;
+      }
+
+      const email = prompt('Enter your email for verification:');
+      if (!email) return;
+
+      if (!storedProfiles[email]) {
+        verifaceStatus.innerText = '❌ No profile found for that email.';
+        return;
+      }
+
+      verifaceStatus.innerText = 'Starting verification process...';
+      
+      try {
+        const camOk = await startVerifaceCamera();
+        if (!camOk) return;
+
+        const live = await livenessChallenge();
+        if (!live) { 
+          verifaceStatus.innerText = '❌ Liveness check failed'; 
+          stopVerifaceCamera(); 
+          return; 
+        }
+
+        verifaceStatus.innerText = 'Collecting live descriptors…';
+        const liveCaptures = [];
+        
+        for (let i = 0; i < 4; i++) {
+          try { 
+            const d = await captureFaceDescriptor(4); 
+            liveCaptures.push(d); 
+          } catch (error) {
+            console.error('Error capturing live descriptor:', error);
+          }
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        
+        if (!liveCaptures.length) { 
+          verifaceStatus.innerText = '❌ Could not capture live descriptors'; 
+          stopVerifaceCamera(); 
+          return; 
+        }
+        
+        const liveAvg = avgDescriptor(liveCaptures);
+        const stored = storedProfiles[email].descriptor;
+
+        const similarity = cosineSimilarity(liveAvg, stored);
+        const similarityPercent = Math.round(similarity * 100);
+        
+        if (similarity > 0.90) {
+          verifaceStatus.innerText = `✅ Verified ${email}! Similarity: ${similarityPercent}%`;
+        } else {
+          verifaceStatus.innerText = `❌ Verification failed. Similarity: ${similarityPercent}%`;
+        }
+        
+        stopVerifaceCamera();
+        
+      } catch (error) {
+        verifaceStatus.innerText = '❌ Verification error: ' + error.message;
+        stopVerifaceCamera();
+      }
+    }
+
+    registerBtn.addEventListener('click', registerFace);
+    verifyBtn.addEventListener('click', verifyFace);
+    
+    cancelBtn.addEventListener('click', () => { 
+      stopVerifaceCamera(); 
+      verifaceStatus.innerText = 'Operation cancelled.'; 
+    });
+
+    demoSuccessBtn.addEventListener('click', () => {
+      verifaceStatus.innerText = '✅ Demo: Successful authentication simulated';
+      setTimeout(() => {
+        verifaceStatus.innerText = 'Ready for next action.';
+      }, 3000);
+    });
+    
+    demoFailureBtn.addEventListener('click', () => {
+      verifaceStatus.innerText = '❌ Demo: Authentication failure simulated';
+      setTimeout(() => {
+        verifaceStatus.innerText = 'Ready for next action.';
+      }, 3000);
+    });
+
+    window.addEventListener('load', async () => {
+      await loadFaceModels();
+    });
+  </script>
+</body>
+</html>
