@@ -1,6 +1,6 @@
 # Veriface
 
-Veriface is a proof-of-personhood face biometrics system I designed to prevent bots and automated abuse.
+Veriface is a proof-of-personhood face biometrics system designed to prevent bots and automated abuse through facial verification.
 
 ## Libraries Used
 
@@ -17,3 +17,9 @@ It is designed to work in web browsers, though I'm not certain about its compati
    - If you have an existing profile, Veriface compares your current face descriptor against the stored profile to verify your identity.
    - If you don't have a profile, the system automatically creates one using your facial data.
 5. **Completion**: Once this process finishes, you're successfully verified.
+
+## Demo
+
+You can test the Veriface demo to experience the facial verification process firsthand. The demo will guide you through the complete verification flow, allowing you to see how the system captures and processes facial data in real-time.
+
+<a href="https://brandonang23.github.io/Veriface/src/demo/index.html">Demo</a>
